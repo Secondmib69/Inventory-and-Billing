@@ -10,7 +10,7 @@ class ProductSeralizer(serializers.ModelSerializer):
 
     class Meta:
         model = Product
-        fields = ['name', 'price', 'stock', 'sku', 'created_at', 'updated_at', 'initial_stock']
+        fields = ['id', 'name', 'price', 'stock', 'sku', 'created_at', 'updated_at', 'initial_stock']
         read_only_fields = ['sku', 'stock']
 
 
@@ -28,3 +28,5 @@ class ProductSeralizer(serializers.ModelSerializer):
                 product.refresh_from_db(fields=['stock']) # refreshes fetched data from db so we can see the right stock amount in 201 response
 
             return product
+        
+        

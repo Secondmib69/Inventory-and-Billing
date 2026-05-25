@@ -41,7 +41,15 @@ class StockMovement(models.Model):
         PURCHASE = 'Purchase', 'Purchase'
         OTHER = 'Other', 'Other'
 
+    class TypeChoices(models.TextChoices):
+        MOVE_IN = 'IN', 'in'
+        MOVE_OUT = 'OUT', 'out'
+
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='stock_movements')
     created_at = models.DateTimeField(auto_now_add=True)
-    quantity = models.IntegerField()
-    reason = models.CharField(max_length=50, choices=ReasonChoices, default=ReasonChoices.OTHER)
+    quantity = models.PositiveIntegerField()
+    reason = models.CharField(max_length=50, choices=ReasonChoices.choices, default=ReasonChoices.OTHER)
+    move_type = models.CharField(max_length=5, choices=TypeChoices.choices, default=TypeChoices.MOVE_IN)
+
+    def __str__(self):
+        return f'{self.move_type} >> {self.product.name} ({self.quantity})'
