@@ -1,4 +1,7 @@
-from django.db import models
+from django.db import IntegrityError, models
+from django.utils.text import slugify
+import string
+import random
 
 # Create your models here.
 
@@ -11,7 +14,25 @@ class Product(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.name
+        return f'product: {self.name} with sku: {self.sku}'
+    
+    def _sku_generator(self):
+        base = slugify(self.name)[:20].upper() or 'PRODUCT'
+        suffix = ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
+        return f'{base}-{suffix}'
+    
+    def save(self, *args, **kwargs):
+        if not self.sku:
+            while True: # we use this loop to avoid if theres a tiny chance generated sku already exists
+                self.sku = self._sku_generator()
+                try:
+                    super().save(*args, **kwargs)
+                    break
+                except IntegrityError:
+                    continue # Retry with a new SKU
+        else:
+            super().save(*args, **kwargs)
+                
     
 class StockMovement(models.Model):
 
