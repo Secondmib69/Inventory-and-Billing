@@ -1,4 +1,4 @@
-from django.db import IntegrityError, models
+from django.db import IntegrityError, models, transaction
 from django.utils.text import slugify
 import string
 import random
@@ -26,12 +26,12 @@ class Product(models.Model):
             while True: # we use this loop to avoid if theres a tiny chance generated sku already exists
                 self.sku = self._sku_generator()
                 try:
-                    super().save(*args, **kwargs)
-                    break
+                    with transaction.atomic():
+                        return super().save(*args, **kwargs)
                 except IntegrityError:
                     continue # Retry with a new SKU
         else:
-            super().save(*args, **kwargs)
+            return super().save(*args, **kwargs)
                 
     
 class StockMovement(models.Model):
