@@ -5,5 +5,6 @@ from .views import *
 app_name = 'inventory'
 
 urlpatterns = [
-    path('products/', PostListAPIView.as_view(), name='product_list')
+    path('products/', ProductListAPIView.as_view(), name='product_list'),
+    path('stock-movements/', StockMovementsListAPIView.as_view(), name='stock_movement_list')
 ]
