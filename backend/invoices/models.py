@@ -2,7 +2,6 @@ from django.db import IntegrityError, models, transaction
 from django.utils import timezone
 from inventory.models import Product
 import uuid
-
 # Create your models here.
 
 
