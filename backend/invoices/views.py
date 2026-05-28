@@ -21,6 +21,17 @@ class InvoiceListAPIView(generics.ListCreateAPIView):
         )
 
 
+class InvoiceDetailAPIView(generics.RetrieveAPIView):
+    serializer_class = InvoiceSerializer
+    lookup_url_kwarg = 'id'
+
+    def get_queryset(self):
+        qs = Invoice.objects.prefetch_related(
+            Prefetch('items', queryset=InvoiceItem.objects.select_related('product'))
+        )
+        return qs
+
+
 
 class InvoicePDFDwonloadView(APIView):
 
