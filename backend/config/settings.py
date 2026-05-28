@@ -41,6 +41,8 @@ INSTALLED_APPS = [
     'invoices.apps.InvoicesConfig',
 
     'rest_framework',
+
+    'django_filters',
 ]
 
 MIDDLEWARE = [
