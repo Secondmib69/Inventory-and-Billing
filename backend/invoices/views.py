@@ -5,13 +5,20 @@ from .serializers import InvoiceSerializer
 from django.http import FileResponse
 from rest_framework.views import APIView
 from .pdf_utils import generate_invoice_pdf
+from django.db.models import Prefetch
 
 # Create your views here.
 
 
 class InvoiceListAPIView(generics.ListCreateAPIView):
-    queryset = Invoice.objects.all()
     serializer_class = InvoiceSerializer
+
+    def get_queryset(self):
+        qs = Invoice.objects.prefetch_related(
+            Prefetch(
+                'items', queryset=InvoiceItem.objects.select_related('product')
+            )
+        )
 
 
 

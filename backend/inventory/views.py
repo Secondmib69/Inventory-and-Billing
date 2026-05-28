@@ -21,5 +21,5 @@ class ProductListAPIView(generics.ListCreateAPIView):
 
 
 class StockMovementsListAPIView(generics.ListCreateAPIView):
-    queryset = StockMovement.objects.all()
+    queryset = StockMovement.objects.select_related('product')
     serializer_class = StockMovementSerializer
