@@ -1,3 +1,4 @@
+
 from rest_framework import serializers, reverse
 from .models import Invoice, InvoiceItem
 from inventory.models import Product, StockMovement
@@ -6,6 +7,18 @@ from django.db.models import F
 
 
 class InvoiceItemSerializer(serializers.ModelSerializer):
+
+    def get_product(self, obj):
+        request = self.context.get('request')
+        url = reverse.reverse('inventory:product_detail', request=request, kwargs={'id': obj.product.id})
+        return {
+            'id': obj.product.id,
+            'name': obj.product.name,
+            'details': url
+        }
+
+
+    product = serializers.SerializerMethodField()
     
 
     class Meta:

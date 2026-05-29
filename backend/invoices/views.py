@@ -1,4 +1,5 @@
 from django.shortcuts import render, get_object_or_404
+import jwt
 from rest_framework import generics
 from .models import Invoice, InvoiceItem
 from .serializers import InvoiceSerializer
@@ -9,11 +10,15 @@ from django.db.models import Prefetch
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from .filters import InvoiceFilter, InvoicePagination
+from rest_framework.permissions import IsAuthenticated
+from dj_rest_auth.jwt_auth import JWTCookieAuthentication
 
 # Create your views here.
 
 
 class InvoiceListAPIView(generics.ListCreateAPIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTCookieAuthentication]
     serializer_class = InvoiceSerializer
     filter_backends = [SearchFilter, DjangoFilterBackend]
     search_fields = ['invoice_number', 'customer_name', 'items__product__name']
@@ -30,6 +35,8 @@ class InvoiceListAPIView(generics.ListCreateAPIView):
 
 
 class InvoiceDetailAPIView(generics.RetrieveAPIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTCookieAuthentication]
     serializer_class = InvoiceSerializer
     lookup_url_kwarg = 'id'
 
@@ -42,6 +49,8 @@ class InvoiceDetailAPIView(generics.RetrieveAPIView):
 
 
 class InvoicePDFDwonloadView(APIView):
+    permission_classes =[IsAuthenticated]
+    authentication_classes = [JWTCookieAuthentication]
 
     def get(self, request, id):
         invoice = get_object_or_404(Invoice, pk=id)
