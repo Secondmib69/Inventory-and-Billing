@@ -22,6 +22,7 @@ urlpatterns = [
     path('api-auth', include('rest_framework.urls')),
     path('inventory/', include('inventory.urls', namespace='inventory')),
     path('invoices/', include('invoices.urls', namespace='invoices')),
+    path('reports/', include('reports.urls', namespace='reports')),
     path('accounts/', include('allauth.urls')),
     path('auth/', include('dj_rest_auth.urls')),
     path('auth/registration/', include('dj_rest_auth.registration.urls')),
