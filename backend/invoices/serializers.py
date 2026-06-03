@@ -15,6 +15,7 @@ class ProductMiniSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'details']
 
 
+
 class InvoiceItemSerializer(serializers.ModelSerializer):
 
     # def get_product(self, obj):
@@ -29,11 +30,14 @@ class InvoiceItemSerializer(serializers.ModelSerializer):
 
     # product = serializers.SerializerMethodField()
     product = ProductMiniSerializer(read_only=True)
-    
-
+    product_id = serializers.PrimaryKeyRelatedField(
+    queryset=Product.objects.all(),
+    source='product',
+    write_only=True
+)
     class Meta:
         model = InvoiceItem
-        fields = ['product', 'quantity', 'unit_price', 'item_total_price']
+        fields = ['product', 'product_id', 'quantity', 'unit_price', 'item_total_price']
         read_only_fields = ['unit_price', 'item_total_price']
 
 

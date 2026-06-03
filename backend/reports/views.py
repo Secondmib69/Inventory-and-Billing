@@ -1,14 +1,19 @@
+from datetime import timedelta
+from django.utils.dateparse import parse_date
 from django.shortcuts import render
 from django.db.models import BigIntegerField, Sum, Avg, Count, Prefetch, Q, Subquery, OuterRef, IntegerField, DecimalField, Value
-from django.db.models.functions import Coalesce
-from rest_framework import generics, status
+from django.db.models.functions import Coalesce, TruncDate
+from rest_framework import generics, status, mixins
 from rest_framework.response import Response
 from invoices.models import Invoice, InvoiceItem
 from inventory.models import Product, StockMovement
-from .serializers import SalesSummarySerializer, TopSellingSerializer
-from .filters import CustomDateFilter
+from .serializers import SalesSummarySerializer, TopSellingSerializer, SalesByDaySerializer, SalesByDayQuerySerializer, SalesSummaryQuerySerializer
+from .filters import CustomDateFilter, ReportsPagination
 from django_filters.rest_framework import DjangoFilterBackend, FilterSet, DateFilter
 from rest_framework.filters import OrderingFilter, SearchFilter
+from rest_framework.exceptions import ValidationError
+from .services import get_sales_by_day
+
 
 
 # Create your views here.
@@ -16,24 +21,30 @@ from rest_framework.filters import OrderingFilter, SearchFilter
 class SalesSummaryAPIView(generics.GenericAPIView):
     serializer_class = SalesSummarySerializer
     queryset = Invoice.objects.all()
-    filter_backends = [DjangoFilterBackend]
-    filterset_class = CustomDateFilter
+
     
     
     def get(self, request, *args, **kwargs):
-        qs = self.filter_queryset(self.get_queryset())
+        params = SalesSummaryQuerySerializer(data=request.query_params)
+        params.is_valid(raise_exception=True)
+        start = params.validated_data.get('start_date')
+        stop = params.validated_data.get('end_date')
+        qs = self.get_queryset()
+        if start is not None:
+            qs = qs.filter(created_at__date__gte=start)
+        if stop is not None:
+            qs = qs.filter(created_at__date__lte=stop)
+
         data = qs.aggregate(
             average_invoice=Coalesce(Avg('total_amount'), Value(0), output_field=DecimalField(max_digits=30, decimal_places=2)),
             invoice_count=Count('id'), # didnt use coalesce because count never returns null
             total_revenue=Coalesce(Sum('total_amount'), Value(0), output_field=BigIntegerField()),
         )
-        start = request.query_params.get('created_at_after')
-        stop = request.query_params.get('created_at_before')
         
         serializer = self.get_serializer(instance=data)
         return Response(data={
-            'created_at_after': start,
-            'created_at_before': stop,
+            'start_date': start,
+            'end_date': stop,
             'result': serializer.data}, status=status.HTTP_200_OK)
     
 
@@ -43,9 +54,13 @@ class TopSellingListAPIView(generics.ListAPIView):
     search_fields = ['name', 'sku']
     ordering_fields = ['stock_sold', 'revenue']
     ordering = ['-revenue']
+    pagination_class = ReportsPagination
 
 
     def get_queryset(self):
+        
+        start_date = getattr(self, 'start_date', None)
+        end_date = getattr(self, 'end_date', None)
         
         stock_sold_qs = StockMovement.objects.filter(
             product_id=OuterRef('pk'), move_type=StockMovement.TypeChoices.MOVE_OUT
@@ -55,14 +70,10 @@ class TopSellingListAPIView(generics.ListAPIView):
             product_id=OuterRef('pk')
         )
 
-        start_date = self.request.query_params.get('start_date')
-        end_date = self.request.query_params.get('end_date')
-
-
-        if start_date:
+        if start_date is not None:
             stock_sold_qs = stock_sold_qs.filter(created_at__date__gte=start_date)
             revenue_qs = revenue_qs.filter(invoice__created_at__date__gte=start_date)
-        if end_date:
+        if end_date is not None:
             stock_sold_qs = stock_sold_qs.filter(created_at__date__lte=end_date)
             revenue_qs = revenue_qs.filter(invoice__created_at__date__lte=end_date)
 
@@ -86,21 +97,48 @@ class TopSellingListAPIView(generics.ListAPIView):
         return qs
     
     def list(self, request, *args, **kwargs):
+
+        params = SalesSummaryQuerySerializer(data=self.request.query_params)
+        params.is_valid(raise_exception=True)
+
         queryset = self.filter_queryset(self.get_queryset())
+
+        start_date = params.validated_data.get('start_date')
+        end_date = params.validated_data.get('end_date')
 
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
+            self.paginator.start_date = start_date
+            self.paginator.end_date = end_date
             response = self.get_paginated_response(serializer.data)
-            # Add metadata to paginated response
-            response.data['start_date'] = self.request.query_params.get('start_date')
-            response.data['end_date'] = self.request.query_params.get('end_date')
             return response
 
         serializer = self.get_serializer(queryset, many=True)
-        return Response({
-            'start_date': self.request.query_params.get('start_date'),
-            'end_date': self.request.query_params.get('end_date'),
-            'results': serializer.data
-        })
+        return Response(serializer.data)
 
+
+class SalesByDayAPIView(generics.ListAPIView):
+    serializer_class = SalesByDaySerializer
+    pagination_class = ReportsPagination
+    queryset = Invoice.objects.none()
+
+
+    def list(self, request, *args, **kwargs):
+        params = SalesByDayQuerySerializer(data=request.query_params)
+        params.is_valid(raise_exception=True)
+        
+        start_date = params.validated_data['start_date']
+        end_date = params.validated_data['end_date']
+
+        results = get_sales_by_day(start_date=start_date, end_date=end_date)
+        page = self.paginate_queryset(results)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            self.paginator.start_date = start_date
+            self.paginator.end_date = end_date
+            response = self.get_paginated_response(serializer.data)
+            return response
+
+        serializer = self.get_serializer(results, many=True)
+        return Response(serializer.data)
