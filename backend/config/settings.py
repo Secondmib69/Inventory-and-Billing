@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'inventory.apps.InventoryConfig',
     'invoices.apps.InvoicesConfig',
     'reports.apps.ReportsConfig',
+    'users.apps.UsersConfig',
 
     'rest_framework',
     'rest_framework.authtoken',
@@ -55,6 +56,8 @@ INSTALLED_APPS = [
 
     'dj_rest_auth',
     'dj_rest_auth.registration',
+
+    'drf_spectacular',
 
 ]
 
@@ -90,6 +93,8 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
     'allauth.account.auth_backends.AuthenticationBackend',
 ]
+
+AUTH_USER_MODEL = 'users.User'
 
 
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
@@ -148,7 +153,7 @@ STATIC_URL = 'static/'
 SITE_ID = 1
 
 REST_FRAMEWORK = {
-    
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema"
 }
 
 REST_AUTH = {
@@ -158,7 +163,7 @@ REST_AUTH = {
     'JWT_AUTH_HTTPONLY': True,
     'JWT_AUTH_SECURE': False,  # Set to True in production (HTTPS)
     'JWT_AUTH_SAMESITE': 'Lax',
-    
+    'REGISTER_SERIALIZER': 'users.serializers.CustomRegisterSerializer',
 }
 
 SIMPLE_JWT = {
@@ -182,3 +187,8 @@ ACCOUNT_EMAIL_VERIFICATION = "optional"
 # ACCOUNT_EMAIL_VERIFICATION_SUPPORTS_RESEND = True
 
 
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Inventory and Billing API",
+    "DESCRIPTION": "API documentation",
+    "VERSION": "1.0.0",
+}

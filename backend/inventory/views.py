@@ -8,6 +8,8 @@ from .filters import ProductFilter, ProductPagePagination, StockMovementPaginati
 from rest_framework.permissions import IsAdminUser
 from dj_rest_auth.jwt_auth import JWTCookieAuthentication
 from .permissions import IsAdminOrAuthenticatedReadonly
+from drf_spectacular.utils import OpenApiParameter,extend_schema
+
 
 # Create your views here.
 
