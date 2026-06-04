@@ -10,7 +10,7 @@ class Product(models.Model):
     sku = models.CharField(max_length=50, unique=True)
     price = models.PositiveIntegerField()
     stock = models.PositiveIntegerField(default=0)
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
@@ -46,10 +46,15 @@ class StockMovement(models.Model):
         MOVE_OUT = 'OUT', 'out'
 
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='stock_movements')
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     quantity = models.PositiveIntegerField()
     reason = models.CharField(max_length=50, choices=ReasonChoices.choices, default=ReasonChoices.OTHER)
     move_type = models.CharField(max_length=5, choices=TypeChoices.choices, default=TypeChoices.MOVE_IN)
 
     def __str__(self):
         return f'{self.move_type} >> {self.product.name} ({self.quantity})'
+    
+    class Meta:
+        indexes = [
+            models.Index(fields=['product', 'move_type', 'created_at'])
+        ]

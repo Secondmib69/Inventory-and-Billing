@@ -8,7 +8,7 @@ import uuid
 class Invoice(models.Model):
     invoice_number = models.CharField(unique=True, max_length=20, editable=False)
     customer_name = models.CharField(max_length=255)
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     total_amount = models.PositiveBigIntegerField(default=0)
 
     def __str__(self):
@@ -31,6 +31,10 @@ class Invoice(models.Model):
         else:
             return super().save(*args, **kwargs)
     
+    class Meta:
+        indexes = [
+            models.Index(fields=['total_amount', 'created_at'])
+        ]
 
 class InvoiceItem(models.Model):
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='items')

@@ -1,18 +1,15 @@
-from datetime import timedelta
-from django.utils.dateparse import parse_date
-from django.shortcuts import render
-from django.db.models import BigIntegerField, Sum, Avg, Count, Prefetch, Q, Subquery, OuterRef, IntegerField, DecimalField, Value
-from django.db.models.functions import Coalesce, TruncDate
-from rest_framework import generics, status, mixins
+from django.db.models import BigIntegerField, Sum, Avg, Count, Q, Subquery, OuterRef, IntegerField, DecimalField, Value
+from django.db.models.functions import Coalesce
+from rest_framework import generics, status
 from rest_framework.response import Response
 from invoices.models import Invoice, InvoiceItem
 from inventory.models import Product, StockMovement
 from .serializers import SalesSummarySerializer, TopSellingSerializer, SalesByDaySerializer, SalesByDayQuerySerializer, SalesSummaryQuerySerializer
-from .filters import CustomDateFilter, ReportsPagination
-from django_filters.rest_framework import DjangoFilterBackend, FilterSet, DateFilter
+from .filters import ReportsPagination
+from rest_framework.permissions import IsAdminUser
 from rest_framework.filters import OrderingFilter, SearchFilter
-from rest_framework.exceptions import ValidationError
 from .services import get_sales_by_day
+from dj_rest_auth.jwt_auth import JWTCookieAuthentication
 
 
 
@@ -21,6 +18,8 @@ from .services import get_sales_by_day
 class SalesSummaryAPIView(generics.GenericAPIView):
     serializer_class = SalesSummarySerializer
     queryset = Invoice.objects.all()
+    permission_classes = [IsAdminUser]
+    authentication_classes = [JWTCookieAuthentication]
 
     
     
@@ -50,11 +49,13 @@ class SalesSummaryAPIView(generics.GenericAPIView):
 
 class TopSellingListAPIView(generics.ListAPIView):
     serializer_class = TopSellingSerializer
+    permission_classes = [IsAdminUser]
     filter_backends = [SearchFilter, OrderingFilter]
     search_fields = ['name', 'sku']
     ordering_fields = ['stock_sold', 'revenue']
     ordering = ['-revenue']
     pagination_class = ReportsPagination
+    authentication_classes = [JWTCookieAuthentication]
 
 
     def get_queryset(self):
@@ -122,6 +123,8 @@ class SalesByDayAPIView(generics.ListAPIView):
     serializer_class = SalesByDaySerializer
     pagination_class = ReportsPagination
     queryset = Invoice.objects.none()
+    permission_classes = [IsAdminUser]
+    authentication_classes = [JWTCookieAuthentication]
 
 
     def list(self, request, *args, **kwargs):
