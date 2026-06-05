@@ -6,7 +6,11 @@ from rest_framework.pagination import CursorPagination
 
 class InvoiceFilter(FilterSet):
 
-    total_amount = RangeFilter(field_name='total_amount', label='Total Amount Range')
+    total_amount = RangeFilter(
+        field_name='total_amount',
+        label='Total Amount Range',
+        help_text='Filter invoices by total amount using `total_amount_min` and `total_amount_max`.',
+    )
 
     @property
     def qs(self):

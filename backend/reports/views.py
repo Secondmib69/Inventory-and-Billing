@@ -1,28 +1,49 @@
-from django.db.models import BigIntegerField, Sum, Avg, Count, Q, Subquery, OuterRef, IntegerField, DecimalField, Value
+from django.db.models import BigIntegerField, Sum, Avg, Count, Subquery, OuterRef, IntegerField, DecimalField, Value
 from django.db.models.functions import Coalesce
 from rest_framework import generics, status
 from rest_framework.response import Response
 from invoices.models import Invoice, InvoiceItem
 from inventory.models import Product, StockMovement
-from .serializers import SalesSummarySerializer, TopSellingSerializer, SalesByDaySerializer, SalesByDayQuerySerializer, SalesSummaryQuerySerializer
+from .serializers import (
+    SalesSummarySerializer,
+    SalesSummaryResponseSerializer,
+    TopSellingSerializer,
+    SalesByDaySerializer,
+    SalesByDayQuerySerializer,
+    SalesSummaryQuerySerializer,
+    ReportsPaginatedResponseSerializer,
+)
 from .filters import ReportsPagination
 from rest_framework.permissions import IsAdminUser
 from rest_framework.filters import OrderingFilter, SearchFilter
 from .services import get_sales_by_day
 from dj_rest_auth.jwt_auth import JWTCookieAuthentication
+from drf_spectacular.utils import extend_schema, extend_schema_view
+from config.openapi import (
+    TAG_REPORTS,
+    date_range_params,
+    ordering_param,
+    page_number_params,
+    search_param,
+)
 
 
-
-# Create your views here.
-
+@extend_schema(
+    tags=[TAG_REPORTS],
+    summary='Sales summary',
+    description=(
+        'Aggregate invoice metrics for an optional date range. '
+        'When omitted, all invoices are included. Admin only.'
+    ),
+    parameters=date_range_params(required=False),
+    responses={200: SalesSummaryResponseSerializer},
+)
 class SalesSummaryAPIView(generics.GenericAPIView):
     serializer_class = SalesSummarySerializer
     queryset = Invoice.objects.all()
     permission_classes = [IsAdminUser]
     authentication_classes = [JWTCookieAuthentication]
 
-    
-    
     def get(self, request, *args, **kwargs):
         params = SalesSummaryQuerySerializer(data=request.query_params)
         params.is_valid(raise_exception=True)
@@ -36,17 +57,34 @@ class SalesSummaryAPIView(generics.GenericAPIView):
 
         data = qs.aggregate(
             average_invoice=Coalesce(Avg('total_amount'), Value(0), output_field=DecimalField(max_digits=30, decimal_places=2)),
-            invoice_count=Count('id'), # didnt use coalesce because count never returns null
+            invoice_count=Count('id'),
             total_revenue=Coalesce(Sum('total_amount'), Value(0), output_field=BigIntegerField()),
         )
-        
+
         serializer = self.get_serializer(instance=data)
         return Response(data={
             'start_date': start,
             'end_date': stop,
             'result': serializer.data}, status=status.HTTP_200_OK)
-    
 
+
+@extend_schema_view(
+    get=extend_schema(
+        tags=[TAG_REPORTS],
+        summary='Top selling products',
+        description=(
+            'Rank products by units sold and revenue within an optional date range. '
+            'Supports search, ordering, and page-number pagination. Admin only.'
+        ),
+        parameters=[
+            *date_range_params(required=False),
+            search_param('name', 'sku'),
+            ordering_param('stock_sold', 'revenue', default='-revenue'),
+            *page_number_params(),
+        ],
+        responses={200: ReportsPaginatedResponseSerializer},
+    ),
+)
 class TopSellingListAPIView(generics.ListAPIView):
     serializer_class = TopSellingSerializer
     permission_classes = [IsAdminUser]
@@ -57,12 +95,11 @@ class TopSellingListAPIView(generics.ListAPIView):
     pagination_class = ReportsPagination
     authentication_classes = [JWTCookieAuthentication]
 
-
     def get_queryset(self):
-        
+
         start_date = getattr(self, 'start_date', None)
         end_date = getattr(self, 'end_date', None)
-        
+
         stock_sold_qs = StockMovement.objects.filter(
             product_id=OuterRef('pk'), move_type=StockMovement.TypeChoices.MOVE_OUT
         )
@@ -78,9 +115,8 @@ class TopSellingListAPIView(generics.ListAPIView):
             stock_sold_qs = stock_sold_qs.filter(created_at__date__lte=end_date)
             revenue_qs = revenue_qs.filter(invoice__created_at__date__lte=end_date)
 
-        stock_sold_subquery = stock_sold_qs.values('product_id').annotate(total=Sum('quantity')).values('total')[:1] # subquery should only return 1 row
-        revenue_subquery = revenue_qs.values('product_id').annotate(total=Sum('item_total_price')).values('total')[:1] # subquery should only return 1 row
-
+        stock_sold_subquery = stock_sold_qs.values('product_id').annotate(total=Sum('quantity')).values('total')[:1]
+        revenue_subquery = revenue_qs.values('product_id').annotate(total=Sum('item_total_price')).values('total')[:1]
 
         qs = Product.objects.annotate(stock_sold=
             Coalesce(
@@ -96,7 +132,7 @@ class TopSellingListAPIView(generics.ListAPIView):
         )
 
         return qs
-    
+
     def list(self, request, *args, **kwargs):
 
         params = SalesSummaryQuerySerializer(data=self.request.query_params)
@@ -119,6 +155,21 @@ class TopSellingListAPIView(generics.ListAPIView):
         return Response(serializer.data)
 
 
+@extend_schema_view(
+    get=extend_schema(
+        tags=[TAG_REPORTS],
+        summary='Sales by day',
+        description=(
+            'Daily revenue totals between `start_date` and `end_date` (inclusive). '
+            'Both dates are required; the range cannot exceed 365 days. Admin only.'
+        ),
+        parameters=[
+            *date_range_params(required=True, max_days=365),
+            *page_number_params(),
+        ],
+        responses={200: ReportsPaginatedResponseSerializer},
+    ),
+)
 class SalesByDayAPIView(generics.ListAPIView):
     serializer_class = SalesByDaySerializer
     pagination_class = ReportsPagination
@@ -126,11 +177,10 @@ class SalesByDayAPIView(generics.ListAPIView):
     permission_classes = [IsAdminUser]
     authentication_classes = [JWTCookieAuthentication]
 
-
     def list(self, request, *args, **kwargs):
         params = SalesByDayQuerySerializer(data=request.query_params)
         params.is_valid(raise_exception=True)
-        
+
         start_date = params.validated_data['start_date']
         end_date = params.validated_data['end_date']
 

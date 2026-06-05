@@ -5,13 +5,27 @@ from django.db.models import F
 
 class ProductSeralizer(serializers.ModelSerializer):
 
-    initial_stock = serializers.IntegerField(required=False, default=0, min_value=0,
-     write_only=True, label='Initial Stock', help_text='existing stock (optional)')
+    initial_stock = serializers.IntegerField(
+        required=False,
+        default=0,
+        min_value=0,
+        write_only=True,
+        label='Initial Stock',
+        help_text='Optional seed quantity. Creates an IN stock movement on product creation.',
+    )
 
     class Meta:
         model = Product
         fields = ['id', 'name', 'price', 'stock', 'sku', 'created_at', 'updated_at', 'initial_stock']
         read_only_fields = ['sku', 'stock']
+        extra_kwargs = {
+            'name': {'help_text': 'Display name of the product.'},
+            'price': {'help_text': 'Unit price as a positive integer.'},
+            'stock': {'help_text': 'Current on-hand quantity (read-only; changed via stock movements).'},
+            'sku': {'help_text': 'Auto-generated stock-keeping unit (read-only).'},
+            'created_at': {'help_text': 'Timestamp when the product was created.'},
+            'updated_at': {'help_text': 'Timestamp of the last product update.'},
+        }
 
 
     def create(self, validated_data):
@@ -37,6 +51,17 @@ class StockMovementSerializer(serializers.ModelSerializer):
     class Meta:
         model = StockMovement
         fields = ['id', 'product', 'quantity', 'move_type', 'created_at', 'reason']
+        extra_kwargs = {
+            'product': {'help_text': 'Product primary key.'},
+            'quantity': {'help_text': 'Units moved (positive integer).'},
+            'move_type': {
+                'help_text': 'Direction of movement: `IN` adds stock, `OUT` subtracts stock.',
+            },
+            'reason': {
+                'help_text': 'Why the movement occurred: `Sale`, `Purchase`, or `Other`.',
+            },
+            'created_at': {'help_text': 'Timestamp when the movement was recorded.'},
+        }
 
     def validate(self, attrs):
         product = attrs['product']

@@ -9,10 +9,30 @@ from .models import Product
 
 class ProductFilter(FilterSet):
 
-    min_price = NumberFilter(field_name='price', lookup_expr='gte', label='Minimum Price')
-    max_price = NumberFilter(field_name='price', lookup_expr='lte', label='Maximum Price')
-    min_stock = NumberFilter(field_name='stock', lookup_expr='gte', label='Minimum Stock')
-    max_stock = NumberFilter(field_name='stock', lookup_expr='lte', label='Maximum Stock')
+    min_price = NumberFilter(
+        field_name='price',
+        lookup_expr='gte',
+        label='Minimum Price',
+        help_text='Products with price greater than or equal to this value (≥ 0).',
+    )
+    max_price = NumberFilter(
+        field_name='price',
+        lookup_expr='lte',
+        label='Maximum Price',
+        help_text='Products with price less than or equal to this value (≥ 0).',
+    )
+    min_stock = NumberFilter(
+        field_name='stock',
+        lookup_expr='gte',
+        label='Minimum Stock',
+        help_text='Products with stock greater than or equal to this value (≥ 0).',
+    )
+    max_stock = NumberFilter(
+        field_name='stock',
+        lookup_expr='lte',
+        label='Maximum Stock',
+        help_text='Products with stock less than or equal to this value (≥ 0).',
+    )
     # stock = RangeFilter(field_name='stock', label='Stock Range')
 
     class Meta:

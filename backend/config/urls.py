@@ -25,6 +25,7 @@ urlpatterns = [
     path('inventory/', include('inventory.urls', namespace='inventory')),
     path('invoices/', include('invoices.urls', namespace='invoices')),
     path('reports/', include('reports.urls', namespace='reports')),
+    path('users/', include('users.urls', namespace='users')),
     path('accounts/', include('allauth.urls')),
     path('auth/', include('dj_rest_auth.urls')),
     path('auth/registration/', include('dj_rest_auth.registration.urls')),

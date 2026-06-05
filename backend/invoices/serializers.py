@@ -31,14 +31,21 @@ class InvoiceItemSerializer(serializers.ModelSerializer):
     # product = serializers.SerializerMethodField()
     product = ProductMiniSerializer(read_only=True)
     product_id = serializers.PrimaryKeyRelatedField(
-    queryset=Product.objects.all(),
-    source='product',
-    write_only=True
-)
+        queryset=Product.objects.all(),
+        source='product',
+        write_only=True,
+        help_text='Product primary key (write-only; use on create).',
+    )
+
     class Meta:
         model = InvoiceItem
         fields = ['product', 'product_id', 'quantity', 'unit_price', 'item_total_price']
         read_only_fields = ['unit_price', 'item_total_price']
+        extra_kwargs = {
+            'quantity': {'help_text': 'Number of units to sell (must not exceed available stock).'},
+            'unit_price': {'help_text': 'Price per unit, copied from the product at creation time.'},
+            'item_total_price': {'help_text': 'Line total (`quantity` × `unit_price`), set automatically.'},
+        }
 
 
 
@@ -50,6 +57,13 @@ class InvoiceSerializer(serializers.ModelSerializer):
         model = Invoice
         fields = ['id', 'invoice_number', 'customer_name', 'items', 'created_at', 'total_amount']
         read_only_fields = ['invoice_number', 'created_at', 'total_amount']
+        extra_kwargs = {
+            'customer_name': {'help_text': 'Name printed on the invoice.'},
+            'invoice_number': {'help_text': 'Unique invoice identifier (auto-generated).'},
+            'total_amount': {'help_text': 'Sum of all line-item totals (auto-calculated).'},
+            'created_at': {'help_text': 'Timestamp when the invoice was created.'},
+            'items': {'help_text': 'Line items. At least one item is required on create.'},
+        }
 
 
     def create(self, validated_data):

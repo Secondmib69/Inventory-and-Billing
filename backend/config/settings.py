@@ -189,6 +189,18 @@ ACCOUNT_EMAIL_VERIFICATION = "optional"
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "Inventory and Billing API",
-    "DESCRIPTION": "API documentation",
+    "DESCRIPTION": (
+        "REST API for inventory management, invoicing, reporting, and user administration. "
+        "Authenticate with JWT cookies via `/auth/login/` unless noted otherwise."
+    ),
     "VERSION": "1.0.0",
+    "TAGS": [
+        {"name": "Inventory", "description": "Products and stock movements."},
+        {"name": "Invoices", "description": "Invoice creation, listing, and PDF export."},
+        {"name": "Reports", "description": "Sales analytics (admin only)."},
+        {"name": "Users", "description": "User listing and profile management."},
+    ],
+    "COMPONENT_SPLIT_REQUEST": True,
+    "SCHEMA_PATH_PREFIX": r"/(inventory|invoices|reports|users)/",
+    "SORT_OPERATION_PARAMETERS": "config.openapi.operation_parameter_sort_key",
 }
