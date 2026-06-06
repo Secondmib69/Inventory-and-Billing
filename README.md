@@ -39,13 +39,20 @@ Notable routes:
 
 ## Running With Docker
 
-1. Copy the example environment file:
+1. Clone the repository and enter the project directory:
+
+```bash
+git clone <repository-url>
+cd Inventory_Billing
+```
+
+2. Copy the example environment file:
 
 ```bash
 cp .env.example .env
 ```
 
-2. Open `.env` and replace the placeholder values with real values:
+3. Open `.env` and replace the placeholder values with real values:
 
 ```env
 SECRET_KEY=your-secret-key-here
@@ -59,13 +66,13 @@ For local development, `DEBUG=True`, `ALLOWED_HOSTS=127.0.0.1,localhost`, `DB_HO
 Generate a random Django secret key with:
 
 ```bash
-python - <<'PY'
+python3 - <<'PY'
 from django.core.management.utils import get_random_secret_key
 print(get_random_secret_key())
 PY
 ```
 
-3. Build and start the containers:
+4. Build and start the containers:
 
 ```bash
 docker compose up -d --build
@@ -77,19 +84,19 @@ Or use the Makefile:
 make up
 ```
 
-4. Run database migrations:
+5. Run database migrations:
 
 ```bash
 make migrate
 ```
 
-5. Create an admin user if needed:
+6. Create an admin user if needed:
 
 ```bash
 docker compose exec django_web python backend/manage.py createsuperuser
 ```
 
-6. Visit the API docs:
+7. Visit the API docs:
 
 ```bash
 http://localhost:8000/api/docs/
