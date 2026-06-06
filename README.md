@@ -42,8 +42,8 @@ Notable routes:
 1. Clone the repository and enter the project directory:
 
 ```bash
-git clone <repository-url>
-cd Inventory_Billing
+git clone https://github.com/Secondmib69/Inventory-and-Billing.git
+cd Inventory-and-Billing
 ```
 
 2. Copy the example environment file:
