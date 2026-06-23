@@ -142,12 +142,13 @@ class TopSellingListAPIView(generics.ListAPIView):
 
         start_date = params.validated_data.get('start_date')
         end_date = params.validated_data.get('end_date')
-
+        
+        if self.paginator:
+            self.paginator.start_date = start_date
+            self.paginator.end_date = end_date
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
-            self.paginator.start_date = start_date
-            self.paginator.end_date = end_date
             response = self.get_paginated_response(serializer.data)
             return response
 
@@ -185,11 +186,12 @@ class SalesByDayAPIView(generics.ListAPIView):
         end_date = params.validated_data['end_date']
 
         results = get_sales_by_day(start_date=start_date, end_date=end_date)
+        if self.paginator:
+            self.paginator.start_date = start_date
+            self.paginator.end_date = end_date
         page = self.paginate_queryset(results)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
-            self.paginator.start_date = start_date
-            self.paginator.end_date = end_date
             response = self.get_paginated_response(serializer.data)
             return response
 
